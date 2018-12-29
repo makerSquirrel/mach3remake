@@ -6,13 +6,17 @@
   license: CC0 1.0
 */
 
+// #define SCREEN_WIDTH 160
+// #define SCREEN_HEIGHT 128
+#define SCREEN_WIDTH 80
+#define SCREEN_HEIGHT 64
+
 #define RCL_PIXEL_FUNCTION pixelFunc
 /* ^ Before including raycastlib, this has to be set to the name of the
      function that will render pixels. It allows super performance. */
 
 #define RCL_COMPUTE_WALL_TEXCOORDS 0
 #define RCL_COMPUTE_FLOOR_TEXCOORDS 0
-#define RCL_COMPUTE_FLOOR_DEPTH 0
 #define RCL_COMPUTE_FLOOR_DEPTH 0
 #define RCL_COMPUTE_CEILING_DEPTH 0
 /* ^ Turn off features we won't be using, so that the program runs faster.
@@ -22,7 +26,9 @@
 
 #include <Gamebuino-Meta.h>
 #include "raycastlib.h"
-
+// #include <utility/Graphics.h>
+extern const uint8_t font5x7[];
+extern const uint8_t font3x5[];
 RCL_Camera camera;              // Defines a view that will be rendered.
 RCL_RayConstraints constraints; // Says the details of casting individual rays.
 
@@ -30,7 +36,7 @@ RCL_RayConstraints constraints; // Says the details of casting individual rays.
    (in RCL_Units). */
 RCL_Unit floorHeightAt(int16_t x, int16_t y)
 {
-  return x < 0 || x >= 10 || y < 0 || y >= 10 ?
+  return x < 0 || x > 10 || y < 0 || y > 50 ?
     RCL_UNITS_PER_SQUARE * 2 : 0;
     /* ^ RCL_UNITS_PER_SQUARE is the length of one side of the game square.
          Since we'll place the camera at RCL_UNITS_PER_SQUARE height, let's
@@ -53,9 +59,9 @@ void pixelFunc(RCL_PixelInfo *pixel)
      Check the RCL_PixelInfo struct for details. */
 
   if (pixel->isWall)
-    color = pixel->hit.direction + 2; // give walls different colors
+    color = 4; //pixel->hit.direction + 2; // give walls different colors
   else
-    color = pixel->isFloor ? 10 : 11; // also make ceiling and floor differ
+    color = pixel->isFloor ? 2 : 14; // also make ceiling and floor differ
 
   /* You can do all kinds of processing here and draw the pixel wherever you
      want, or even discard it. Just remember this function has to be fast and
@@ -76,30 +82,51 @@ void draw()
 void setup()
 {
   gb.begin();
-  gb.setFrameRate(30);
+  gb.display.init(SCREEN_WIDTH, SCREEN_HEIGHT, ColorMode::index);
+  // gb.setFrameRate(30);
+  // gb.display.setFont(font5x7);
+  gb.display.setFont(font3x5);
 
   RCL_initCamera(&camera); /* To initialize all parameters so that none
                               remains undefined. */
 
-  // Set the camera position to the middle of square [2;3].
-  camera.position.x = 2 * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2;
-  camera.position.y = 3 * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2;
+  // Set the camera position to the middle of square [5;1].
+  camera.position.x = 5 * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2;
+  camera.position.y = 1 * RCL_UNITS_PER_SQUARE + RCL_UNITS_PER_SQUARE / 2;
 
   camera.height = RCL_UNITS_PER_SQUARE;
 
   // Set the camera resolution to Gamebuino display resolution.
-  camera.resolution.x = 80;
-  camera.resolution.y = 64;
+  camera.resolution.x = SCREEN_WIDTH;
+  camera.resolution.y = SCREEN_HEIGHT;
+  camera.direction = +190;
 
   // This specifies the ray behavior.
   RCL_initRayConstraints(&constraints);
-  constraints.maxHits = 1;   // Stop at first intersection with a wall.
-  constraints.maxSteps = 20; // Trace maximum of 20 squares.
+  constraints.maxHits = 2;   // Stop at first intersection with a wall.
+  constraints.maxSteps = 42; // Trace maximum of 20 squares.
 }
 
 void loop()
 {
   while(!gb.update());
   draw();
-  camera.direction -= 10; // Rotate the camera for some animation.
+  // camera.direction -= 10; // Rotate the camera for some animation.
+  camera.position.y += camera.position.y > 48*RCL_UNITS_PER_SQUARE ? 0 : 1 * RCL_UNITS_PER_SQUARE;
+
+  // gb.tft.setCursor(0, 0);
+  	// gb.tft.setColor(0, 1);
+gb.display.setColor(0);
+   gb.display.cursorX = 3;
+    gb.display.cursorY = 3;
+//         gb.tft.print(F("CPU/RAM: "));
+// //         // this itself does actually cost a lot of performance!
+//         gb.tft.print(gb.getCpuLoad());
+//         gb.tft.print(F("/"));
+//     gb.tft.print(gb.getFreeRam());
+    gb.display.print(F("CPU/RAM: "));
+//         // this itself does actually cost a lot of performance!
+    gb.display.print(gb.getCpuLoad());
+    gb.display.print(F("/"));
+gb.display.print(gb.getFreeRam());
 }
